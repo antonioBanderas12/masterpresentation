@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     const white = 0xFFFFFF; 
-    const red = 0xFBA5A5;
-    const blue = 0x6fa8dc;
-    const green = 0xb6d7a8;
+    const red = 0xfb958b;
+    const blue = 0x7bb3ff;
+    const green = 0x65c3ba;
     const black = 0x000000;
 
 
@@ -87,11 +87,11 @@ function createBox(name, description, status, image) {
 
 let colour = white;
 
-
-if(status == "theories"){colour = red}
-else if(status == "prototype"){colour = blue}
-else if(status == "results"){colour = green}
-else if(image != false){colour = white}
+if(image == false){
+  if(status == "theories"){colour = red}
+  else if(status == "prototype"){colour = blue}
+  else if(status == "results"){colour = green}
+}else{colour = white}
 
 
 
@@ -117,12 +117,11 @@ else if(image != false){colour = white}
   cube.userData.outline = null;
   cube.userData.boundBox = null;
   cube.userData.colour = colour;
-  if(image){
+  if(image == false){
+    cube.userData.image = false;
+  }else{
     cube.userData.image = image;
   }
-else{
-  cube.userData.image = false;
-}
 
   boxes.push(cube);
   return cube;
@@ -165,7 +164,7 @@ function enhanceBox(name, parentes = [], relations = [[]]) {
       cube.geometry.dispose();
       cube.material.dispose();
   
-      cube.geometry = new THREE.BoxGeometry(width, height, 0.2); // keep depth thin
+      cube.geometry = new THREE.BoxGeometry(width *5, height *5, 0.01); // keep depth thin
       cube.material = new THREE.MeshBasicMaterial({ map: texture });
       cube.material.transparent = true;
 
@@ -198,7 +197,7 @@ function enhanceBox(name, parentes = [], relations = [[]]) {
     // Create text geometry
     const textGeometry = new TextGeometry(cube.userData.name, {
       font: font,
-      size: boxSize / 2,
+      size: boxSize,
       height: 0.2,
       curveSegments: 12,
     });
@@ -372,7 +371,6 @@ cube.userData.level = zLevel;
       else{
         showChildGroupsOverlay(children, clickedObject);
             }
-      ///xxx
     }
 }
    }else{
@@ -633,8 +631,9 @@ function onHover(cube) {
 
       if (cube.userData.children.length > 0){
        createOutline(cube);
-       cube.material.color.set(black);
-      }
+       if(cube.userData.image == false){
+        cube.material.color.set(black);
+       }      }
       
       const textContainer = document.getElementById('description-container');
       if (textContainer) {
@@ -761,11 +760,11 @@ function manNavigation() {
   
   canvas.addEventListener('wheel', (event) => {
     if (mode === structure && !explore) {
-      camera.position.z += event.deltaY * 0.1; 
+      camera.position.z += event.deltaY * 0.3; 
     }
 
     if (mode === relations && !explore) {
-      camera.position.x -= event.deltaY * 0.1; 
+      camera.position.x -= event.deltaY * 0.3; 
     }
   });
   
@@ -785,8 +784,8 @@ function manNavigation() {
   
   canvas.addEventListener('mousemove', (event) => {
     if (mode === structure && !explore && isDragging) {
-      const deltaX = (event.clientX - prevMousePosition.x) * 0.1; // Adjust drag sensitivity
-      const deltaY = (event.clientY - prevMousePosition.y) * 0.1;
+      const deltaX = (event.clientX - prevMousePosition.x) * 0.3; // Adjust drag sensitivity
+      const deltaY = (event.clientY - prevMousePosition.y) * 0.3;
   
       // Modify camera's x and z positions based on drag
       camera.position.x -= deltaX;
@@ -799,8 +798,8 @@ function manNavigation() {
 
 
     if (mode === relations && !explore && isDragging) {
-      const deltaX = (event.clientX - prevMousePosition.x) * 0.1; // Adjust drag sensitivity
-      const deltaY = (event.clientY - prevMousePosition.y) * 0.1;
+      const deltaX = (event.clientX - prevMousePosition.x) * 0.3; // Adjust drag sensitivity
+      const deltaY = (event.clientY - prevMousePosition.y) * 0.3;
   
       // Since the plane is rotated, modify the camera's z and y positions
       camera.position.z -= deltaX;
@@ -834,6 +833,9 @@ function changeMode() {
   if (mode === structure && !explore) {
     targetPosition.z += bigCubeSize;
     rot.set(0, 0, 0); // 90 degrees in radians
+
+    showconnections()
+
   }
 
 
@@ -841,6 +843,8 @@ function changeMode() {
     targetPosition.x -= bigCubeSize;
 
     rot.set(Math.PI / 2, -Math.PI / 2, Math.PI / 2); // 90 degrees in radians
+
+    showconnections()
   }
 
 
@@ -865,6 +869,10 @@ function changeMode() {
 
 
 function explorationView() {
+  boxes.forEach(box => {
+    removePermLines(box);
+  });
+
   if(mode === structure){
   const group = boxes.filter(child => child.userData.group === currentGroup);
   if (group.length === 0) return;
@@ -1127,7 +1135,9 @@ function createOutline(cube, color = 0xF7E0C0) {
     }else if(mode === relations){
       factor = size.z
     }
-    const outlineGeometry = new THREE.CircleGeometry(factor / 1.8);
+    // const outlineGeometry = new THREE.CircleGeometry(factor / 1.8);
+
+const outlineGeometry = new THREE.BoxGeometry(factor * 1.2, size.y * 1.4, 0.1)
 
     const outlineMaterial = new THREE.MeshBasicMaterial({
       color,
@@ -1144,9 +1154,11 @@ function createOutline(cube, color = 0xF7E0C0) {
 
     if (mode === structure){
       outlineMesh.rotation.set(0, 0, 0);
+      outlineMesh.position.z -= 1;
     }
     else if(mode === relations){
       outlineMesh.rotation.set(0, - (Math.PI / 2), 0);
+      outlineMesh.position.x -= 1;
     }
   }
 }
@@ -1164,13 +1176,17 @@ function removeOutline(cube) {
 function removeHover(cube) {
   if (cube) {
     removeOutline(cube);
+    if(cube.userData.image == false){
     cube.material.color.set(cube.userData.colour);
+    }
     removeLines(cube);
 
     cube.userData.children?.forEach(child => {
       if(child){
         removeOutline(child)
+        // if(cube.userData.image == false){
         child.material.color.set(child.userData.colour);
+        // }
         removeLines(child);
       }
   });
@@ -1185,7 +1201,9 @@ function removeHover(cube) {
   cube.userData.relations?.forEach(([entity, description]) => {
     if (entity) {
       removeOutline(entity);
+      if(cube.userData.image == false){
       entity.material.color.set(cube.userData.colour);
+      }
       removeLines(entity);
     }
   });
@@ -1218,8 +1236,8 @@ function structurePos() {
 
 //levelSpacing
     const levelSpacing = 40; // Distance between levels (y-axis)
-    const groupSpacing = 100; // Distance between groups within a level (x-axis)
-    const boxSpacing = 80;    // Distance between boxes within a cluster (x-axis)
+    const groupSpacing = 130; // Distance between groups within a level (x-axis)
+    const boxSpacing = 100;    // Distance between boxes within a cluster (x-axis)
 
     // Set z-position to the front face of the big cube
     const zFrontFace = bigCubeSize / 2;
@@ -1307,7 +1325,7 @@ function structureExplorePos() {
   // setTimeout(() => {
   const levelSpacing = 300; // Distance between levels on the z-axis
   const groupSpacing = 100; // Distance between groups within a level
-  const boxSpacing = 50;    // Distance between boxes within a cluster
+  const boxSpacing = 80;    // Distance between boxes within a cluster
 
 //rotation
 boxes.forEach(cube => {
@@ -1546,6 +1564,167 @@ function relationsExplorePos() {
 
 
 
+function createConstantLines(startCube, endCube, color = 0xaeaeae) {
+
+
+    if(startCube.userData.status == "theories"){color = red}
+    else if(startCube.userData.status  == "prototype"){color = blue}
+    else if(startCube.userData.status  == "results"){color = green}
+
+
+  const material = new THREE.LineBasicMaterial({ color, transparent: false, opacity: 0.2, depthWrite: false});
+  const geometry = new THREE.BufferGeometry().setFromPoints([
+    startCube.position.clone(),
+    endCube.position.clone()
+  ]);
+  const line = new THREE.Line(geometry, material);
+  line.renderOrder = 0;
+  scene.add(line);
+
+  // Store the line in userData of the startCube for cleanup
+  if (!startCube.userData.permLines) {
+    startCube.userData.permLines = []; // Initialize permLines if it doesn't exist
+  }
+
+  startCube.userData.permLines.push(line);
+
+}
+
+
+function createPermOutline() {
+  if(mode === structure) {
+  boxes.forEach(startCube => {
+    console.log(cube.userData.image)
+    if(cube.userData.image == false){
+      return
+    }else{
+
+    ///xxx
+
+    const box = new THREE.Box3().setFromObject(startCube); // Get bounding box of the mesh
+
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    let Outcol = startCube.userData.colour;
+
+    let factor;
+    if (mode === structure) {
+      factor = size.x;
+    } else if (mode === relations) {
+      factor = size.z;
+    }
+
+    const outlineGeometry = new THREE.BoxGeometry(factor * 1.05, size.y * 1.05, 0.1);
+
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: Outcol,
+      transparent: false,
+      opacity: 1,
+    });
+
+    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    outlineMesh.position.copy(startCube.position);
+    outlineMesh.position.z -= 1
+    scene.add(outlineMesh);
+
+    // Save the outline for later removal
+    startCube.userData.outline = outlineMesh;
+  }
+  });
+}
+}
+
+
+
+
+
+
+
+
+function removePermLines(cube) {
+  if (cube && cube.userData.permLines && cube.userData.permLines.length > 0) {
+    // Remove each line from the scene
+    cube.userData.permLines.forEach(line => {
+      scene.remove(line);
+      line.geometry.dispose();  // Clean up geometry to prevent memory leaks
+      line.material.dispose();  // Clean up material to prevent memory leaks
+    });
+
+    // Clear the permLines array
+    cube.userData.permLines = []; // Reset the array after removal
+  } else {
+    console.log("No permanent lines to remove for cube:", cube);
+  }
+}
+
+
+
+
+
+
+function showconnections() {
+
+  if (mode === structure) {
+    // Cleanup all previously created lines
+    boxes.forEach(box => {
+      removePermLines(box);
+      if (box.userData.PermStatusline && box.userData.PermStatusline.length) {
+        box.userData.PermStatusline.forEach(outline => scene.remove(outline));
+        box.userData.PermStatusline = []; // Reset
+      }
+    });
+
+    // Show connections (create new lines)
+    setTimeout(() => {
+    // createPermOutline()
+    boxes.forEach(box => {
+      if (box.userData.children) {
+        box.userData.children.forEach(child => {
+          createConstantLines(box, child);
+        });
+      }
+    });
+  }, 2000)
+
+
+
+
+  } else if (mode === relations) {
+    // Cleanup all previously created lines
+    boxes.forEach(box => {
+      removePermLines(box);
+      if (box.userData.PermStatusline && box.userData.PermStatusline.length) {
+        box.userData.PermStatusline.forEach(outline => scene.remove(outline));
+        box.userData.PermStatusline = []; // Reset
+      }
+  
+    });
+
+    // Show connections (create new lines for relations)
+    setTimeout(() => {
+    boxes.forEach(box => {
+      if (box.userData.relations) {
+        box.userData.relations.forEach(([entity, description]) => {
+          createConstantLines(box, entity);
+        });
+      }
+    });
+  }, 2000)
+
+
+}
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -1616,68 +1795,163 @@ const cA = createBox(
   "",
   "0"
 );
-const topic = createBox(
-  "Topic",
+
+
+const titlePage = createBox(
+  "Learning Theories",
   "Information structuring",
   "general",
-  false
+  "assets/topic.png"
+);
+
+// const topic = createBox(
+//   "Learning / Information Acquisition",
+//   "Information structuring",
+//   "general",
+//   false
+// );
+
+// const visualLearning = createBox(
+//   "Visual Information Structuring / \n Graph Representations",
+//   "Information structuring",
+//   "general",
+//   false
+// );
+// const graphs = createBox(
+//   "Graph Representation",
+//   "Information structuring",
+//   "general",
+//   false
+// );
+
+
+const researchQuestion = createBox(
+  "How can semantic deconstructions \n through graph visualizations \n help to enhance meaningful learning?",
+  "Information structuring",
+  "general",
+  "assets/theme.jpeg"
 );
 
 
 
 //theories
 const theories = createBox(
-  "Theories",
+  "Visual Deconstruction",
   "base theories",
   "theories",
   false
 );
 
-    const knowledgeTheories = createBox(
-      "Knowledge Theories",
-      "base theories",
-      "theories",
-      false
-    );
+    // const knowledgeTheories = createBox(
+    //   "Information Representation",
+    //   "base theories",
+    //   "theories",
+    //   false
+    // )
 
-          const organisationalTheories = createBox(
-            "Organisational Theories",
-            "base theories",
-            "theories",
-            false
-          );
+          // const organisationalTheories = createBox(
+          //   "Organisational",
+          //   "base theories",
+          //   "theories",
+          //   false
+          // );
                   const cognitiveLoad = createBox(
                     "Cognitive Load Theory",
-                    "base theories",
+                    "Cognitive Load Theory",
                     "theories",
-                    false
-                  );
-                  const chunking = createBox(
-                    "Chunking Theory",
-                    "base theories",
-                    "theories",
-                    false
+                   "assets/sweller.jpeg"
                   );
 
-          const pkTheories = createBox(
-            "Prior Knowledge Theories",
-            "base theories",
-            "theories",
-            false
-          );
+                      // const sweller = createBox(
+                      //   "John Sweller",
+                      //   "Cognitive Load Theory",
+                      //   "theories",
+                      //   "/assets/jSweller.png"
+                      // );
+
+                      // const intrinsic = createBox(
+                      //   "Intrinsic Cognitive Loads",
+                      //   "cognitive work that is provoked by the difficulty of the material",
+                      //   "theories",
+                      //   false
+                      // );
+
+                      // const extraneous = createBox(
+                      //   "Extraneous Cognitive Loads",
+                      //   "cognitive work that emerges from the way information is presented",
+                      //   "theories",
+                      //   false
+                      // );
+
+
+                  
+
+                  const chunking = createBox(
+                    "Chunking Theory",
+                    "Chunking Theory",
+                    "theories",
+                    "assets/new1.jpeg"
+                  );
+
+                      // const Miller = createBox(
+                      //   "George Miller",
+                      //   "Chunking Theory",
+                      //   "theories",
+                      //   "/assets/gMiller2.jpg"
+                      // );
+
+                      // const chunk = createBox(
+                      //   "George Miller",
+                      //   "Chunking Theory",
+                      //   "theories",
+                      //   "/assets/chunks.png"
+                      // );
+
+          // const pkTheories = createBox(
+          //   "Prior Knowledge",
+          //   "base theories",
+          //   "theories",
+          //   false
+          // );
                   const meaningfulLearning = createBox(
                     "Meaningful Learning Theory",
                     "base theories",
                     "theories",
-                    false
+                    "assets/new2.jpeg"
                   );
 
-          const mcTheories = createBox(
-            "Multi-Component Theories",
-            "base theories",
-            "theories",
-            false
-          );
+                  // const superOrdinate = createBox(
+                  //   "Superordinate Learning",
+                  //   "base theories",
+                  //   "theories",
+                  //   "/assets/superordinate.png"
+                  // );
+
+                  // const subOrdinate = createBox(
+                  //   "Subordinate Learning",
+                  //   "base theories",
+                  //   "theories",
+                  //   "/assets/subordinate.png"
+                  // );
+                  // const combOrdinate = createBox(
+                  //   "Combinational Learning",
+                  //   "base theories",
+                  //   "theories",
+                  //   "/assets/combinational.png"
+                  // );
+          // const mcTheories = createBox(
+          //   "Multi-Component",
+          //   "base theories",
+          //   "theories",
+          //   false
+          // );
+
+              const senses = createBox(
+                "Multi-Component Theories",
+                "stimulation of several components instead of limiting the memorization to one",
+                "prototype",
+                "assets/multiComponent.jpeg"
+              );
 
 
 
@@ -1689,6 +1963,48 @@ const nodelinks = createBox(
   false
 );
 
+          // const conceptMaps = createBox(
+          //   "Node-Link-Graphs",
+          //   "graph theories",
+          //   "theories",
+          //   "assets/conceptMap.jpeg"
+          // );
+
+          const knowledgeMap = createBox(
+            "Node-Link-Graphs",
+            "graph theories",
+            "theories",
+            "assets/knowledgeMap.jpeg"
+          );
+
+//           const mindMap = createBox(
+//             "Node-Link-Graphs",
+//             "graph theories",
+//             "theories",
+//             "assets/mindMap.jpeg"
+//           );
+
+          const conceptualDiagram = createBox(
+            "Node-Link-Graphs",
+            "graph theories",
+            "theories",
+            "assets/conceptualDiagram.jpeg"
+          );
+
+//           const cognitiveMap = createBox(
+//             "Node-Link-Graphs",
+//             "graph theories",
+//             "theories",
+//             "assets/cognitiveMap.jpeg"
+//           );
+
+
+
+
+
+
+
+
 
 //prototype
 const prototype = createBox(
@@ -1697,110 +2013,733 @@ const prototype = createBox(
   "prototype",
   false
 );
-const framework = createBox(
-  "Framework",
-  "design guidelines",
-  "prototype",
-  false
-);
-const implementation = createBox(
-  "Implementation",
-  "concrete implementation",
-  "prototype",
-  false
-);
+// const framework = createBox(
+//   "Framework",
+//   "design guidelines",
+//   "prototype",
+//   false
+// );
+
+      // const functionalities = createBox(
+      //   "Functionalities",
+      //   "design guidelines",
+      //   "prototype",
+      //   false
+      // );
+
+          const useCase = createBox(
+            "Use Case",
+            "design guidelines",
+            "prototype",
+            false 
+          );
+
+              const text = createBox(
+                "Text",
+                "design guidelines",
+                "prototype",
+                "assets/interface.png"
+              );
+
+          const mappingStructure = createBox(
+            "Mapping Structure",
+            "design guidelines",
+            "theories",
+            false
+          );
+
+            const cube = createBox(
+              "Mapping Structure",
+              "design guidelines",
+              "prototype",
+              "assets/cube.png"
+            );
+
+              const hierarchies = createBox(
+                "Hierarchies",
+                "This mapping shows hierarchical structures by sorting entities in superordinate and subordinate elements. guidelines",
+                "theories",
+              "assets/hierarchies.jpeg"
+              );
+
+                      // const hierarchies_1 = createBox(
+                      //   "Hierarchies",
+                      //   "This mapping shows hierarchical structures by sorting entities in superordinate and subordinate elements. guidelines",
+                      //   "prototype",
+                      //   "assets/mappings/hierarchies_1.png"
+                      // );
+
+                      // const hierarchies_2 = createBox(
+                      //   "Hierarchies",
+                      //   "This mapping shows hierarchical structures by sorting entities in superordinate and subordinate elements. guidelines",
+                      //   "prototype",
+                      //   "assets/mappings/hierarchies_2.png"                      );
+
+
+              const dynamics = createBox(
+                "Dynamics",
+                "This mapping shows non-structural relationships of influence and change between entities.",
+                "theories",
+                "assets/dynamics.jpeg"
+              );
+
+                  // const dynamics_1 = createBox(
+                  //   "Dynamics",
+                  //   "This mapping shows non-structural relationships of influence and change between entities.",
+                  //   "prototype",
+                  //   "assets/mappings/dynamics_1.png"                  );
+
+
+                  // const dynamics_2 = createBox(
+                  //   "Dynamics",
+                  //   "This mapping shows non-structural relationships of influence and change between entities.",
+                  //   "prototype",
+                  //   "assets/mappings/dynamics_2.png"                  );
+
+
+              const types = createBox(
+                "Types",
+                "This mapping shows the types of entities.",
+                "theories",
+                "assets/types.jpeg"
+              );
+
+                  // const types_1 = createBox(
+                  //   "Types",
+                  //   "This mapping shows the types of entities.",
+                  //   "prototype",
+                  //   "assets/mappings/types_1.png"
+                  // );
+
+                  // const types_2 = createBox(
+                  //   "Types",
+                  //   "This mapping shows the types of entities.",
+                  //   "prototype",
+                  //   "assets/mappings/types_2.png"
+                  // );
+
+              const sequence = createBox(
+                "Sequence",
+                "This mapping shows sequential orders of entities.",
+                "theories",
+                "assets/sequence.jpeg"
+              );
+
+                  // const sequence_1 = createBox(
+                  //   "Themes",
+                  //   "This mapping shows sequential orders of entities.",
+                  //   "prototype",
+                  //   "assets/mappings/sequence_1.png"
+                  // );
+
+                  // const sequence_2 = createBox(
+                  //   "Themes",
+                  //   "This mapping shows sequential orders of entities.",
+                  //   "prototype",
+                  //   "assets/mappings/sequence_2.png"
+                  // );
+    
+              const latent = createBox(
+                "Latent",
+                "This mapping combines the parameters of the other mappings and therefore shows overall similarity of entities in a latent space.",
+                "theories",
+                "assets/latent.jpeg"
+              );
+
+                  // const latent_1 = createBox(
+                  //   "Latent",
+                  //   "This mapping combines the parameters of the other mappings and therefore shows overall similarity of entities in a latent space.",                "prototype",
+                  //   "assets/mappings/latent.png"
+                  // );
+
+      const interfac = createBox(
+        "Interface",
+        "design guidelines",
+        "prototype",
+        false
+      );
+
+      const interaction = createBox(
+        "Interaction",
+        "design guidelines",
+        "prototype",
+        "assets/interaction.jpeg"
+      );
+
+
+      // const graphics = createBox(
+      //   "Graphics",
+      //   "design guidelines",
+      //   "prototype",
+      //   false
+      // );
+
+          const gestalt = createBox(
+            "Gestalt Principles",
+            "design guidelines",
+            "prototype",
+            "assets/gestalt.jpeg"
+          );
+
+
+  const implementation = createBox(
+    "Implementation",
+    "Implementation",
+    "prototype",
+    false
+  );
+
+      const textCorpus = createBox(
+        "Text Corpus",
+        "Implementation",
+        "prototype",
+        false
+      );
+
+      const inputWord = createBox(
+        "Input Word",
+        "Implementation",
+        "prototype",
+        false
+      );
+
+          const llm_1 = createBox(
+            "Input Word",
+            "Implementation",
+            "prototype",
+            "assets/p1.jpeg"
+          );
+
+          const llm_2 = createBox(
+            "Implementation",
+            "Implementation",
+            "prototype",
+            "assets/llm_1.jpeg"
+          );
+
+          const llm_3 = createBox(
+            "Implementation",
+            "Implementation",
+            "prototype",
+            "assets/llm_2.jpeg"
+          );
+
+          const llm_4 = createBox(
+            "Implementation",
+            "Implementation",
+            "prototype",
+            "assets/llm_3.jpeg"
+          );
+
+
+              const limitationsProto = createBox(
+                "Limitations",
+                "Implementation",
+                "prototype",
+                "assets/llm_3.jpeg"
+              );
+
+
+
+
+
+
+
+// const implementation = createBox(
+//   "Implementation",
+//   "concrete implementation",
+//   "prototype",
+//   false
+// );
 
 
 
 //results
-const results = createBox(
-  "Results",
-  "evaluation process",
-  "results",
-  false
-);
-
 const evaluation = createBox(
-  "Evalutation",
+  "Evaluation",
   "evaluation process",
   "results",
   false
 );
-const discussion = createBox(
-  "Discussion",
-  "results discussion",
-  "results",
-  false
-);
+
+    const guidelines = createBox(
+      "Interview Guidelines",
+      "evaluation process",
+      "results",
+      "assets/iguidelines.jpeg"
+    );
+
+    const part1 = createBox(
+      "Contextualisation",
+      "evaluation process",
+      "results",
+      false
+    );
+
+            const two = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/02.jpeg"
+            );
+            const three = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/03.jpeg"
+            );
+            const threeone = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/03.2.jpeg"
+            );
+            const four = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/04.jpeg"
+            );
+
+
+    const part2 = createBox(
+      "Direct Analysis",
+      "evaluation process",
+      "results",
+      false
+    );
+
+            const five = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/05.jpeg"
+            );
+            const six = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/06.jpeg"
+            );
+            const seven = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/07.jpeg"
+            );
+            const eight = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/08.jpeg"
+            );
+            const nine = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/09.jpeg"
+            );
+            const ten = createBox(
+              "Interview Part 2",
+              "evaluation process",
+              "results",
+              "assets/evaluation/10.jpeg"
+            );
+
+
+                          const assesment = createBox(
+                            "Assessment",
+                            "evaluation process",
+                            "results",
+                            "assets/assesment.jpeg"
+                          );
+
+                          // const improvement = createBox(
+                          //   "Improvement Areas",
+                          //   "evaluation process",
+                          //   "discussion",
+                          //   false
+                          // );
+
+                          //         const LLMtwo = createBox(
+                          //           "LLM",
+                          //           "evaluation process",
+                          //           "discussion",
+                          //           false
+                          //         );
+
+                          //         const training = createBox(
+                          //           "Training",
+                          //           "evaluation process",
+                          //           "discussion",
+                          //           false
+                          //         );
+
+                          //         const models = createBox(
+                          //           "Bigger models",
+                          //           "evaluation process",
+                          //           "discussion",
+                          //           false
+                          //         );
+
+
+                          //         const complexity = createBox(
+                          //           "Graph Complexity",
+                          //           "evaluation process",
+                          //           "discussion",
+                          //           false
+                          //         );
+
+                          // const success = createBox(
+                          //   "Success",
+                          //   "evaluation process",
+                          //   "discussion",
+                          //   false
+                          // );
+
+
+                          //       const deconstruction = createBox(
+                          //         "Semantic Deconstruction",
+                          //         "evaluation process",
+                          //         "discussion",
+                          //         false
+                          //       );
+                          //           const overview = createBox(
+                          //             "Overview",
+                          //             "evaluation process",
+                          //             "discussion",
+                          //             false
+                          //           );
+                          //           const vocabulary = createBox(
+                          //             "Terminology",
+                          //             "evaluation process",
+                          //             "discussion",
+                          //             false
+                          //           );
+
+
+
+                          //       const gvis = createBox(
+                          //         "Graph Visualising",
+                          //         "evaluation process",
+                          //         "discussion",
+                          //         false
+                          //       );
+
+                          //           const memorisation = createBox(
+                          //             "Memorisation",
+                          //             "evaluation process",
+                          //             "discussion",
+                          //             false
+                          //           );
+
+                          //           const media = createBox(
+                          //             "Media Translation",
+                          //             "evaluation process",
+                          //             "discussion",
+                          //             false
+                          //           );
+
+                          //       const interactiontwo = createBox(
+                          //         "Interaction",
+                          //         "evaluation process",
+                          //         "discussion",
+                          //         false
+                          //       );
+    
 
 
 
 
-const novak = createBox(
-  "Novak",
-  "node link theories",
-  "image",
-  "/assets/novak.jpg"
-);
+    const limitations = createBox(
+      "Limitations",
+      "evaluation process",
+      "results",
+      false
+    );
 
+        // const homogeinity = createBox(
+        //   "Participants Homogeneity",
+        //   "evaluation process",
+        //   "results",
+        //   false
+        // );
+
+        // const textPassage = createBox(
+        //   "Text Passage",
+        //   "evaluation process",
+        //   "results",
+        //   false
+        // );
+
+
+
+// const discussion = createBox(
+//   "Results",
+//   "results discussion",
+//   "results",
+//   false
+// );
 
 
 
 enhanceBox(cA, [null],[[]])
 
-enhanceBox(topic, [cA], [
+enhanceBox(titlePage, [cA], [
 ]);
 
+// enhanceBox(topic, [titlePage], [
+// ]);
+// enhanceBox(visualLearning, [topic], [
+// ]);
+// enhanceBox(graphs, [visualLearning], [
+// ]);
+
+enhanceBox(researchQuestion, [titlePage], [
+]);
 
 
 //theories
-enhanceBox(theories, [topic], [
+enhanceBox(theories, [researchQuestion], [
 ]);
-      enhanceBox(knowledgeTheories
-        , [theories], [
+      // enhanceBox(knowledgeTheories
+      //   , [theories], [
+      // ]);
+
+                // enhanceBox(organisationalTheories, [knowledgeTheories], [
+                // ]);
+                enhanceBox(cognitiveLoad, [theories], [
+                ]);
+
+                      // enhanceBox(sweller, [cognitiveLoad], [
+                      // ]);
+                      // enhanceBox(intrinsic, [cognitiveLoad], [
+                      // ]);
+                      // enhanceBox(extraneous, [cognitiveLoad], [
+                      // ]);
+
+                enhanceBox(chunking, [cognitiveLoad], [
+                ]);
+                    // enhanceBox(Miller, [chunking], [
+                    // ]);
+                    // enhanceBox(chunk, [chunking], [
+                    // ]);
+
+
+                // enhanceBox(pkTheories, [knowledgeTheories], [
+                // ]);
+                enhanceBox(meaningfulLearning, [cognitiveLoad], [
+                ]);
+                    // enhanceBox(superOrdinate, [meaningfulLearning], [
+                    // ]);
+                    // enhanceBox(subOrdinate, [meaningfulLearning], [
+                    // ]);
+                    // enhanceBox(combOrdinate, [meaningfulLearning], [
+                    // ]);
+
+
+                // enhanceBox(mcTheories, [knowledgeTheories], [
+                // ]);
+
+
+      enhanceBox(nodelinks, [chunking, meaningfulLearning], [
       ]);
 
-                enhanceBox(organisationalTheories, [knowledgeTheories], [
-                ]);
-                enhanceBox(cognitiveLoad, [organisationalTheories], [
-                ]);
-                enhanceBox(chunking, [organisationalTheories], [
-                ]);
-                enhanceBox(pkTheories, [knowledgeTheories], [
-                ]);
-                enhanceBox(meaningfulLearning, [pkTheories], [
-                ]);
-                enhanceBox(mcTheories, [knowledgeTheories], [
-                ]);
-
-
-      enhanceBox(nodelinks, [theories], [
-      ]);
-
+            // enhanceBox(conceptMaps, [nodelinks], [
+            // ]);
+            enhanceBox(knowledgeMap, [nodelinks], [
+            ]);
+      //       enhanceBox(mindMap, [nodelinks], [
+      //       ]);
+            enhanceBox(conceptualDiagram, [nodelinks], [
+            ]);
+      //       enhanceBox(cognitiveMap, [nodelinks], [
+      //       ]);
 
 
 
 
 //prototype
-enhanceBox(prototype, [topic], [
+enhanceBox(prototype, [researchQuestion], [
 ]);
-enhanceBox(framework, [prototype], [
+    // enhanceBox(framework, [prototype], [
+    // ]);
+          // enhanceBox(implementation, [prototype], [
+          // ]);
+
+
+          enhanceBox(useCase, [prototype], [
+          ]);
+          enhanceBox(senses, [useCase], [
+          ]);
+              enhanceBox(text, [senses], [
+              ]);
+
+
+enhanceBox(interfac, [prototype], [
 ]);
-enhanceBox(implementation, [prototype], [
+          
+enhanceBox(interaction, [interfac], [
 ]);
+
+
+
+          // enhanceBox(graphics, [interfac], [
+          // ]);
+          
+          enhanceBox(gestalt, [interfac], [
+          ]);
+          
+
+
+          // enhanceBox(functionalities, [framework], [
+          // ]);
+        enhanceBox(mappingStructure, [knowledgeMap, conceptualDiagram, gestalt], [
+        ]);
+                enhanceBox(hierarchies, [mappingStructure], [
+                ]);
+                    // enhanceBox(hierarchies_1, [hierarchies], [
+                    // ]);
+                    // enhanceBox(hierarchies_2, [hierarchies], [
+                    // ]);
+
+                enhanceBox(dynamics, [mappingStructure], [
+                ]);
+                    // enhanceBox(dynamics_1, [dynamics], [
+                    // ]);
+                    // enhanceBox(dynamics_2, [dynamics], [
+                    //       ]);
+
+                enhanceBox(types, [mappingStructure], [
+                ]);
+                    // enhanceBox(types_1, [types], [
+                    // ]);
+                    // enhanceBox(types_2, [types], [
+                    //         ]);
+
+                enhanceBox(sequence, [mappingStructure], [
+                ]);
+                    // enhanceBox(sequence_1, [sequence], [
+                    // ]);
+                    // enhanceBox(sequence_2, [sequence], [
+                    // ]);
+
+                enhanceBox(latent, [mappingStructure], [
+                ]);
+                    // enhanceBox(latent_1, [latent], [
+                    // ]);
+
+                    enhanceBox(cube, [latent, sequence, sequence, types, dynamics, hierarchies], [
+                    ]);
+
+                          enhanceBox(implementation, [cube, text], [
+                          ]);
+                          enhanceBox(textCorpus, [implementation], [
+                          ]);
+                          enhanceBox(inputWord, [implementation], [
+                          ]);
+                          enhanceBox(llm_1, [inputWord, textCorpus], [
+                          ]);
+                          enhanceBox(llm_2, [llm_1], [
+                          ]);
+                          enhanceBox(llm_3, [llm_2], [
+                          ]);
+                          enhanceBox(llm_4, [llm_3], [
+                          ]);
+                    
+
+                              enhanceBox(limitationsProto, [llm_4], [
+                              ]);
+
 
 
 
 
 //results
-enhanceBox(results, [topic], [
+enhanceBox(evaluation, [limitationsProto], [
 ]);
-enhanceBox(evaluation, [results], [
-]);
-enhanceBox(discussion, [results], [
-]);
-enhanceBox(novak, [discussion], [
-]);
+    enhanceBox(guidelines, [evaluation], [
+    ]);
+
+
+        enhanceBox(part2, [guidelines], [
+        ]);
+
+            enhanceBox(five, [part2], [
+            ]);
+            enhanceBox(six, [part2], [
+            ]);
+            enhanceBox(seven, [part2], [
+            ]);
+            enhanceBox(eight, [part2], [
+            ]);
+            enhanceBox(nine, [part2], [
+            ]);
+            enhanceBox(ten, [part2], [
+            ]);
+
+
+            enhanceBox(assesment, [five, six, seven, eight, nine, ten], [
+            ]);
+
+        enhanceBox(part1, [assesment], [
+        ]);
+            enhanceBox(two, [part1], [
+            ]);
+            enhanceBox(three, [part1], [
+            ]);
+            enhanceBox(threeone, [three], [
+            ]);
+            enhanceBox(four, [part1], [
+            ]);
+
+            // enhanceBox(improvement, [assesment], [
+            // ]);
+            //     enhanceBox(LLMtwo, [improvement], [
+            //     ]);
+            //            enhanceBox(training, [LLMtwo], [
+            //             ]);
+            //             enhanceBox(models, [LLMtwo], [
+            //             ]);
+
+            //         enhanceBox(complexity, [improvement, five], [
+            //         ]);
+  
+            // enhanceBox(success, [assesment], [
+            // ]);
+
+            //     enhanceBox(deconstruction, [success], [
+            //     ]);
+
+            //         enhanceBox(overview, [deconstruction, five], [
+            //         ]);
+
+            //         enhanceBox(vocabulary, [deconstruction], [
+            //         ]);
+
+            //     enhanceBox(gvis, [success], [
+            //     ]);
+
+            //         enhanceBox(memorisation, [gvis, five], [
+            //         ]);
+            //         enhanceBox(media, [gvis, five], [
+            //         ]);
+            //     enhanceBox(interactiontwo, [success], [
+            //     ]);
+  
+
+
+
+
+        enhanceBox(limitations, [guidelines], [
+        ]);
+
+
+            // enhanceBox(homogeinity, [limitations], [
+            // ]);
+            // enhanceBox(textPassage, [limitations], [
+            // ]);
+
 
 
 
