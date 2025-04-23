@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Optionally, add hemisphere light for subtle shading
   const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 2); // Sky and ground light
   scene.add(hemisphereLight);
-
+  // scene.background.set 
 
 
   //Variables
@@ -102,7 +102,7 @@ if(image == false){
    const cube = new THREE.Mesh(geometry, material);
 
 
-  //cube.userData.group = group;
+  // scene.background = new THREE.Color(0x373854);
 
   cube.userData.group = null;
 
@@ -1135,9 +1135,10 @@ function createOutline(cube, color = 0xF7E0C0) {
     }else if(mode === relations){
       factor = size.z
     }
-    // const outlineGeometry = new THREE.CircleGeometry(factor / 1.8);
+    const outlineGeometry = new THREE.CircleGeometry(factor / 1.8);
 
-const outlineGeometry = new THREE.BoxGeometry(factor * 1.2, size.y * 1.4, 0.1)
+// const outlineGeometry = new THREE.BoxGeometry(factor * 1.2, size.y * 1.4, 0.1)
+
 
     const outlineMaterial = new THREE.MeshBasicMaterial({
       color,
@@ -1147,6 +1148,14 @@ const outlineGeometry = new THREE.BoxGeometry(factor * 1.2, size.y * 1.4, 0.1)
 
     const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
     outlineMesh.position.copy(cube.position);
+
+
+
+    // Scale Y based on the object's height to create an oval
+    const yScale = (size.y / factor) * 2; // Adjust this ratio if it's too wide or too narrow
+    outlineMesh.scale.set(1.3, yScale, 1); // Only scale Y
+
+
     scene.add(outlineMesh);
 
     // Save the outline for later removal
@@ -1832,6 +1841,13 @@ const researchQuestion = createBox(
   "assets/theme.jpeg"
 );
 
+const deconstruction = createBox(
+  "graph deconstruction",
+  "Information structuring",
+  "general",
+  "assets/deconstruction.jpeg"
+);
+
 
 
 //theories
@@ -2052,7 +2068,7 @@ const prototype = createBox(
               "Mapping Structure",
               "design guidelines",
               "prototype",
-              "assets/cube.png"
+              "assets/cubeThree.jpeg"
             );
 
               const hierarchies = createBox(
@@ -2214,21 +2230,21 @@ const prototype = createBox(
             "Implementation",
             "Implementation",
             "prototype",
-            "assets/llm_1.jpeg"
+            "assets/codes2.jpeg"
           );
 
           const llm_3 = createBox(
             "Implementation",
             "Implementation",
             "prototype",
-            "assets/llm_2.jpeg"
+            "assets/codes3.jpeg"
           );
 
           const llm_4 = createBox(
             "Implementation",
             "Implementation",
             "prototype",
-            "assets/llm_3.jpeg"
+            "assets/codes4.jpeg"
           );
 
 
@@ -2236,7 +2252,7 @@ const prototype = createBox(
                 "Limitations",
                 "Implementation",
                 "prototype",
-                "assets/llm_3.jpeg"
+                false
               );
 
 
@@ -2498,9 +2514,12 @@ enhanceBox(titlePage, [cA], [
 enhanceBox(researchQuestion, [titlePage], [
 ]);
 
+enhanceBox(deconstruction, [researchQuestion], [
+]);
+
 
 //theories
-enhanceBox(theories, [researchQuestion], [
+enhanceBox(theories, [deconstruction], [
 ]);
       // enhanceBox(knowledgeTheories
       //   , [theories], [
@@ -2560,7 +2579,7 @@ enhanceBox(theories, [researchQuestion], [
 
 
 //prototype
-enhanceBox(prototype, [researchQuestion], [
+enhanceBox(prototype, [deconstruction], [
 ]);
     // enhanceBox(framework, [prototype], [
     // ]);
@@ -2570,9 +2589,11 @@ enhanceBox(prototype, [researchQuestion], [
 
           enhanceBox(useCase, [prototype], [
           ]);
-          enhanceBox(senses, [useCase], [
-          ]);
-              enhanceBox(text, [senses], [
+ 
+              enhanceBox(text, [useCase], [
+              ]);
+
+              enhanceBox(senses, [text], [
               ]);
 
 
@@ -2632,7 +2653,7 @@ enhanceBox(interaction, [interfac], [
                     enhanceBox(cube, [latent, sequence, sequence, types, dynamics, hierarchies], [
                     ]);
 
-                          enhanceBox(implementation, [cube, text], [
+                          enhanceBox(implementation, [cube, senses], [
                           ]);
                           enhanceBox(textCorpus, [implementation], [
                           ]);
