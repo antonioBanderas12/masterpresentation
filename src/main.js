@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Optionally, add hemisphere light for subtle shading
   const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 2); // Sky and ground light
   scene.add(hemisphereLight);
-  // scene.background.set 
+  scene.background = new THREE.Color(0x3e3b3b);
 
 
   //Variables
@@ -63,8 +63,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     const white = 0xFFFFFF; 
-    const red = 0xfb958b;
-    const blue = 0x7bb3ff;
+    const red = 0xff8b94;
+    const blue = 0xc9c9ff;
     const green = 0x65c3ba;
     const black = 0x000000;
 
@@ -760,11 +760,11 @@ function manNavigation() {
   
   canvas.addEventListener('wheel', (event) => {
     if (mode === structure && !explore) {
-      camera.position.z += event.deltaY * 0.3; 
+      camera.position.z += event.deltaY * 0.1; 
     }
 
     if (mode === relations && !explore) {
-      camera.position.x -= event.deltaY * 0.3; 
+      camera.position.x -= event.deltaY * 0.1; 
     }
   });
   
@@ -1135,8 +1135,13 @@ function createOutline(cube, color = 0xF7E0C0) {
     }else if(mode === relations){
       factor = size.z
     }
-    const outlineGeometry = new THREE.CircleGeometry(factor / 1.8);
 
+    let outlineGeometry = new THREE.BoxGeometry(factor * 1.2, size.y * 1.2, 0.1)
+
+
+if(cube.userData.image === false){
+  outlineGeometry = outlineGeometry = new THREE.CircleGeometry(factor / 1.8);
+}
 // const outlineGeometry = new THREE.BoxGeometry(factor * 1.2, size.y * 1.4, 0.1)
 
 
@@ -1150,10 +1155,10 @@ function createOutline(cube, color = 0xF7E0C0) {
     outlineMesh.position.copy(cube.position);
 
 
-
-    // Scale Y based on the object's height to create an oval
-    const yScale = (size.y / factor) * 2; // Adjust this ratio if it's too wide or too narrow
-    outlineMesh.scale.set(1.3, yScale, 1); // Only scale Y
+    if(cube.userData.image === false){
+      const yScale = (size.y / factor) * 2; // Adjust this ratio if it's too wide or too narrow
+      outlineMesh.scale.set(1.3, yScale, 1);    
+    }
 
 
     scene.add(outlineMesh);
